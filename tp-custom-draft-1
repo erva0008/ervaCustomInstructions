@@ -1,0 +1,99 @@
+# Arkitektur
+
+Vi arbetar med en lager-baserad arkitektur bestående av tre projekttyper:
+
+- **Tool**: ASP.NET Core MVC-webbapp. Hanterar UI och användarinteraktion. Har ingen egen databas. Anropar Extensions och Adapters via gRPC.
+- **Extension**: Backend-tjänst med egen databas (EF Core). Äger affärslogik och persistering. Exponerar gRPC-tjänster som konsumeras av ett eller flera Tools.
+- **Adapter**: Abstraktion över externa tjänster/API:er. Vi äger adapterkoden men inte den underliggande tjänsten. Exponerar gRPC-tjänster och anropas av Tools eller Extensions.
+
+Kommunikation mellan alla lager sker via **gRPC**.
+
+## Detektering av projekttyp
+
+Avgör vilken typ av projekt du jobbar i genom att inspektera kodbasen:
+
+- **Tool**: Innehåller `Views/`-mapp, MVC-controllers (`Controller`-klasser), `.cshtml`-filer.
+- **Extension**: Innehåller `DbContext`, `Migrations/`-mapp, domänmodeller, gRPC-tjänster (`.proto`-filer med `service`-definitioner).
+- **Adapter**: Innehåller `HttpClient`-anrop mot externa API:er, gRPC-tjänster, men saknar `Views/` och `DbContext`.
+
+---
+
+# Teknisk stack
+
+- **Språk**: C# 14 / .NET 10
+- **Webb**: ASP.NET Core MVC (i Tools)
+- **ORM**: Entity Framework Core (i Extensions)
+- **Kommunikation**: gRPC (mellan alla lager)
+- **Lokalisering**: `.resx`-filer med svenska (sv) och engelska (en)
+
+---
+
+# Kodstil
+
+- Skriv kod och kommentarer på **engelska**. (I den utsträckning som det är möjligt, om det inte finns någon bra engelsk term för ett koncept, använd svenska.)
+- Använd senaste C#-features (C# 14).
+- Kommentera bara det som behöver förtydligas — undvik uppenbara kommentarer.
+- Hantera edge cases med tydlig exception-hantering.
+- Kommentera varför designbeslut fattats, inte vad koden gör.
+
+---
+
+# Regler för Tools
+
+När du jobbar i ett **Tool**:
+
+- **Ingen affärslogik här.** All affärslogik tillhör Extensions. Toolet ansvarar enbart för UI, validering av input och presentation.
+- **Ingen direkt databasåtkomst.** All data hämtas/skickas via gRPC-anrop till Extensions eller Adapters.
+- **Använd `.resx` för all text i vyer.** Hårdkoda aldrig text i `.cshtml`-filer.
+  - Kontrollera om en `.resx`-fil redan finns i projektet. Om ja: sök efter befintlig nyckel innan du skapar en ny.
+  - Använd resursfilen med starkt typat anrop, t.ex. `@Translations.MinNyckel`, för kompileringsstöd.
+  - Uppdatera **alla** språkfiler (`.resx` för sv och `.en.resx` för en).
+  - Om projektet saknar `.resx`-filer: rekommendera att bryta ut textsträngar till `.resx`. Se **GroupTool** för referensimplementation.
+- ViewModels ska vara enkla dataklasser — ingen logik.
+
+---
+
+# Regler för Extensions
+
+När du jobbar i en **Extension**:
+
+- All affärslogik placeras här.
+- Dataåtkomst sker via EF Core. Följ befintliga patterns i kodbasen för repository/service-struktur.
+- gRPC-tjänster exponeras för Tools. Håll proto-definitioner i sync med implementationen.
+- Extensions ska vara **klient-agnostiska** — designa API:er utan antaganden om vilken klient som anropar.
+- Databasmigrationer skapas med EF Core. Testa att migrationer kan appliceras från scratch.
+
+---
+
+# Regler för Adapters
+
+När du jobbar i en **Adapter**:
+
+- Adaptern abstraherar en extern tjänst. Returnera normaliserade modeller som är lätta att konsumera.
+- Bygg in resiliens: retry-policies, timeouts och felhantering mot den externa tjänsten.
+- Logga anrop och svar mot den externa tjänsten för felsökning.
+- Adapterns gRPC-kontrakt ska vara stabilt — förändringar i den externa tjänsten ska hanteras internt utan att bryta kontraktet.
+
+---
+
+# Prioriteringar
+
+- Prioritera **korrekthet** framför svarshastighet. Ta den tid som behövs för att undersöka kodbasen noggrant innan du föreslår ändringar — ett genomtänkt svar är alltid bättre än ett snabbt men felaktigt.
+- Vid osäkerhet: fråga utvecklaren snarare än att gissa.
+- Verifiera att föreslagna API:er, metoder och klasser faktiskt existerar i kodbasen eller i refererade paket.
+- Respektera arkitekturens lager-gränser — både mellan projekttyper (Tool/Extension/Adapter) och inom ett projekt (t.ex. Controller → Service → Repository). Inspektera befintlig kodstruktur för att förstå vilka lager som finns. Korta aldrig vägen förbi ett lager. Om befintlig kod bryter mot detta — påpeka det, men åtgärda inte utan godkännande.
+
+---
+
+# Professionellt omdöme
+
+- Följ dessa instruktioner som utgångspunkt. Men om det finns etablerade best practices, designmönster eller ramverkskonventioner som objektivt ger en bättre lösning — föreslå det som ett alternativ och motivera varför. Implementera inte avvikelsen utan godkännande.
+
+---
+
+# Feedback efter kodleverans
+
+- Efter att du presenterat kod, gjort ändringar i filer, eller levererat en lösning som användaren förväntas testa — använd alltid `ask_user`-verktyget för att fråga om resultatet fungerade som förväntat. Vänta på svar innan du fortsätter.
+
+- Följ befintliga mönster i kodbasen — inspektera liknande filer innan du skapar nya.
+- Skriv aldrig kod som bryter existerande funktionalitet utan att nämna det.
