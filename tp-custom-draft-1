@@ -35,6 +35,9 @@ Avgör vilken typ av projekt du jobbar i genom att inspektera kodbasen:
 - Kommentera bara det som behöver förtydligas — undvik uppenbara kommentarer.
 - Hantera edge cases med tydlig exception-hantering.
 - Kommentera varför designbeslut fattats, inte vad koden gör.
+- Vid kodgranskning: ge bara förslag med hög konfidens.
+- Kommentera användning och syfte för externa bibliotek och beroenden.
+- När du svarar på frågor om ramverk, bibliotek eller API:er — använd Context7 för att hämta aktuell dokumentation istället för att förlita dig på träningsdata.
 
 ---
 
@@ -73,6 +76,12 @@ När du jobbar i en **Adapter**:
 - Bygg in resiliens: retry-policies, timeouts och felhantering mot den externa tjänsten.
 - Logga anrop och svar mot den externa tjänsten för felsökning.
 - Adapterns gRPC-kontrakt ska vara stabilt — förändringar i den externa tjänsten ska hanteras internt utan att bryta kontraktet.
+
+---
+
+# Skills
+
+- Utvärdera om det finns installerade skills som är specialiserade på det som efterfrågas, och använd dessa i första hand för att ge mer precisa och relevanta svar.
 
 ---
 
